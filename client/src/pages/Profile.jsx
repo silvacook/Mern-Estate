@@ -18,7 +18,6 @@ import {
 } from "../redux/user/userSlice";
 import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
-
 export default function Profile() {
   const fileRef = useRef(null);
   const { currentUser, loading, error } = useSelector((state) => state.user);
@@ -30,6 +29,12 @@ export default function Profile() {
   const [showListingsError, setShowListingsError] = useState(false);
   const [userListings, setUserListings] = useState([]);
   const dispatch = useDispatch();
+
+  // firebase storage
+  // allow read;
+  // allow write: if
+  // request.resource.size < 2 * 1024 * 1024 &&
+  // request.resource.contentType.matches('image/.*')
 
   useEffect(() => {
     if (file) {
@@ -54,12 +59,13 @@ export default function Profile() {
         setFileUploadError(true);
       },
       () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadUrl) => {
-          setFormData({ ...formData, avatar: downloadUrl });
-        });
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) =>
+          setFormData({ ...formData, avatar: downloadURL })
+        );
       }
     );
   };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
@@ -68,8 +74,6 @@ export default function Profile() {
     e.preventDefault();
     try {
       dispatch(updateUserStart());
-      console.log("FormData:", formData); // Log formData to debug
-
       const res = await fetch(`/api/user/update/${currentUser._id}`, {
         method: "POST",
         headers: {
@@ -77,10 +81,7 @@ export default function Profile() {
         },
         body: JSON.stringify(formData),
       });
-
       const data = await res.json();
-      console.log("Response Data:", data); // Log response data to debug
-
       if (data.success === false) {
         dispatch(updateUserFailure(data.message));
         return;
@@ -89,7 +90,6 @@ export default function Profile() {
       dispatch(updateUserSuccess(data));
       setUpdateSuccess(true);
     } catch (error) {
-      console.error("Update Error:", error); // Log error to debug
       dispatch(updateUserFailure(error.message));
     }
   };
@@ -160,7 +160,6 @@ export default function Profile() {
       console.log(error.message);
     }
   };
-
   return (
     <div className="p-3 max-w-lg mx-auto">
       <h1 className="text-3xl font-semibold text-center my-7">Profile</h1>
@@ -181,7 +180,7 @@ export default function Profile() {
         <p className="text-sm self-center">
           {fileUploadError ? (
             <span className="text-red-700">
-              Error image upload (image must be least than 2 mb)
+              Error Image upload (image must be less than 2 mb)
             </span>
           ) : filePerc > 0 && filePerc < 100 ? (
             <span className="text-slate-700">{`Uploading ${filePerc}%`}</span>
@@ -195,24 +194,24 @@ export default function Profile() {
           type="text"
           placeholder="username"
           defaultValue={currentUser.username}
+          id="username"
           className="border p-3 rounded-lg"
           onChange={handleChange}
-          id="username"
         />
         <input
           type="email"
           placeholder="email"
+          id="email"
           defaultValue={currentUser.email}
           className="border p-3 rounded-lg"
           onChange={handleChange}
-          id="email"
         />
         <input
           type="password"
           placeholder="password"
-          className="border p-3 rounded-lg"
           onChange={handleChange}
           id="password"
+          className="border p-3 rounded-lg"
         />
         <button
           disabled={loading}
@@ -232,12 +231,13 @@ export default function Profile() {
           onClick={handleDeleteUser}
           className="text-red-700 cursor-pointer"
         >
-          Delete Account
+          Delete account
         </span>
         <span onClick={handleSignOut} className="text-red-700 cursor-pointer">
           Sign out
         </span>
       </div>
+
       <p className="text-red-700 mt-5">{error ? error : ""}</p>
       <p className="text-green-700 mt-5">
         {updateSuccess ? "User is updated successfully!" : ""}
@@ -248,6 +248,7 @@ export default function Profile() {
       <p className="text-red-700 mt-5">
         {showListingsError ? "Error showing listings" : ""}
       </p>
+
       {userListings && userListings.length > 0 && (
         <div className="flex flex-col gap-4">
           <h1 className="text-center mt-7 text-2xl font-semibold">
@@ -255,8 +256,8 @@ export default function Profile() {
           </h1>
           {userListings.map((listing) => (
             <div
-              className="border rounded-lg p-3 flex justify-between items-center gap-4"
               key={listing._id}
+              className="border rounded-lg p-3 flex justify-between items-center gap-4"
             >
               <Link to={`/listing/${listing._id}`}>
                 <img
@@ -266,20 +267,22 @@ export default function Profile() {
                 />
               </Link>
               <Link
-                className="flex-1 text-slate-700 font-semibold hover:underline truncate"
-                to={`/listings/${listing._id}`}
+                className="text-slate-700 font-semibold  hover:underline truncate flex-1"
+                to={`/listing/${listing._id}`}
               >
                 <p>{listing.name}</p>
               </Link>
 
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col item-center">
                 <button
                   onClick={() => handleListingDelete(listing._id)}
                   className="text-red-700 uppercase"
                 >
                   Delete
                 </button>
-                <button className="text-green-700 uppercase">Edit</button>
+                <Link to={`/update-listing/${listing._id}`}>
+                  <button className="text-green-700 uppercase">Edit</button>
+                </Link>
               </div>
             </div>
           ))}
