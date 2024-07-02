@@ -31,14 +31,16 @@ export default function CreateListing() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  console.log(formData);
   const handleImageSubmit = (e) => {
-    e.preventDefault();
-    if (files.length > 0 && files.length + formData.imageUrls.length <= 6) {
+    if (files.length > 0 && files.length + formData.imageUrls.length < 7) {
       setUploading(true);
       setImageUploadError(false);
-      const promises = Array.from(files).map((file) => storeImage(file));
+      const promises = [];
 
+      for (let i = 0; i < files.length; i++) {
+        promises.push(storeImage(files[i]));
+      }
       Promise.all(promises)
         .then((urls) => {
           setFormData({
@@ -151,7 +153,6 @@ export default function CreateListing() {
       setLoading(false);
     }
   };
-
   return (
     <main className="p-3 max-w-4xl mx-auto">
       <h1 className="text-3xl font-semibold text-center my-7">
@@ -317,7 +318,7 @@ export default function CreateListing() {
           </p>
           <div className="flex gap-4">
             <input
-              onChange={(e) => setFiles(Array.from(e.target.files))}
+              onChange={(e) => setFiles(e.target.files)}
               className="p-3 border border-gray-300 rounded w-full"
               type="file"
               id="images"
